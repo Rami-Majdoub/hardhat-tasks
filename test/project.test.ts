@@ -2,45 +2,27 @@
 import { assert } from "chai";
 import path from "path";
 
-import { ExampleHardhatRuntimeEnvironmentField } from "../src/ExampleHardhatRuntimeEnvironmentField";
-
 import { useEnvironment } from "./helpers";
 
 describe("Integration tests examples", function () {
-  describe("Hardhat Runtime Environment extension", function () {
+  describe("Task ", function () {
     useEnvironment("hardhat-project");
 
-    it("Should add the example field", function () {
-      assert.instanceOf(
-        this.hre.example,
-        ExampleHardhatRuntimeEnvironmentField
-      );
+    it("Should print a mnemonic phrase", async function () {
+      await this.hre.run("mnemonic");
     });
 
-    it("The example field should say hello", function () {
-      assert.equal(this.hre.example.sayHello(), "hello");
-    });
-  });
-
-  describe("HardhatConfig extension", function () {
-    useEnvironment("hardhat-project");
-
-    it("Should add the newPath to the config", function () {
-      assert.equal(
-        this.hre.config.paths.newPath,
-        path.join(process.cwd(), "asd")
-      );
-    });
-  });
-});
-
-describe("Unit tests examples", function () {
-  describe("ExampleHardhatRuntimeEnvironmentField", function () {
-    describe("sayHello", function () {
-      it("Should say hello", function () {
-        const field = new ExampleHardhatRuntimeEnvironmentField();
-        assert.equal(field.sayHello(), "hello");
+    it("Should print a account infos", async function () {
+      await this.hre.run("account-info", {
+        mnemonic: "script horror palace pear bottom rigid style seat extra vital illegal trial",
+        count: 2
       });
     });
+
+    it("Should print hardhat account infos", async function () {
+      await this.hre.run("hardhat-account-infos");
+    });
+
   });
+  
 });

@@ -1,49 +1,98 @@
-import { extendConfig, extendEnvironment } from "hardhat/config";
-import { lazyObject } from "hardhat/plugins";
-import { HardhatConfig, HardhatUserConfig } from "hardhat/types";
-import path from "path";
+import { task, types } from "hardhat/config";
+import "@nomiclabs/hardhat-ethers";
 
-import { ExampleHardhatRuntimeEnvironmentField } from "./ExampleHardhatRuntimeEnvironmentField";
-// This import is needed to let the TypeScript compiler know that it should include your type
-// extensions in your npm package's types file.
-import "./type-extensions";
+task("abi", "prints the ABI of a contract")
+  .addParam("contract", "contract path", undefined, types.inputFile, false)
+  .setAction(async ({ contract }, { ethers, artifacts, run }) => {
 
-extendConfig(
-  (config: HardhatConfig, userConfig: Readonly<HardhatUserConfig>) => {
-    // We apply our default config here. Any other kind of config resolution
-    // or normalization should be placed here.
-    //
-    // `config` is the resolved config, which will be used during runtime and
-    // you should modify.
-    // `userConfig` is the config as provided by the user. You should not modify
-    // it.
-    //
-    // If you extended the `HardhatConfig` type, you need to make sure that
-    // executing this function ensures that the `config` object is in a valid
-    // state for its type, including its extensions. For example, you may
-    // need to apply a default value, like in this example.
-    const userPath = userConfig.paths?.newPath;
+    await run("compile");
 
-    let newPath: string;
-    if (userPath === undefined) {
-      newPath = path.join(config.paths.root, "newPath");
-    } else {
-      if (path.isAbsolute(userPath)) {
-        newPath = userPath;
-      } else {
-        // We resolve relative paths starting from the project's root.
-        // Please keep this convention to avoid confusion.
-        newPath = path.normalize(path.join(config.paths.root, userPath));
-      }
-    }
+    // get contract fully qualified name
+    const allContracts = await artifacts.getAllFullyQualifiedNames()
+    const contractName = allContracts.find((e) => e.startsWith(contract)) || contract
+    
+    // read contract
+    const contractArtifact = await artifacts.readArtifact(contractName)
+    const contractFactory = await ethers.getContractFactoryFromArtifact(contractArtifact) as any
 
-    config.paths.newPath = newPath;
-  }
-);
-
-extendEnvironment((hre) => {
-  // We add a field to the Hardhat Runtime Environment here.
-  // We use lazyObject to avoid initializing things until they are actually
-  // needed.
-  hre.example = lazyObject(() => new ExampleHardhatRuntimeEnvironmentField());
+    const format = ethers.utils.FormatTypes.full // full minimal json
+    const abi = contractFactory.interface.format(format)
+    
+    console.log(abi);
 });
+
+task("deploy", "deploys a contract")
+  .addParam("contract", "contract path", undefined, types.inputFile, false)
+  .addOptionalPositionalParam("arg0", "1st constructor argument")
+  .addOptionalPositionalParam("arg1", "2nd constructor argument")
+  .addOptionalPositionalParam("arg2", "3rd constructor argument")
+  .addOptionalPositionalParam("arg3", "4th constructor argument")
+  .addOptionalPositionalParam("arg4", "5th constructor argument")
+  .setAction(async (
+    { contract, arg0, arg1, arg2, arg3, arg4 },
+    { ethers, artifacts, run }
+  ) => {
+
+    await run("compile");
+
+    const args = arg0 && (
+      arg1 && (
+        arg2 && (
+          arg3 && (
+            arg4 && (
+              [ arg0, arg1, arg2, arg3, arg4 ]
+            ) || [ arg0, arg1, arg2, arg3 ]
+          ) || [ arg0, arg1, arg2 ]
+        ) || [ arg0, arg1 ]
+      ) || [ arg0 ]
+    ) || []
+    
+    const allContracts = await artifacts.getAllFullyQualifiedNames()
+    const contractName = allContracts.find((e) => e.startsWith(contract)) || ""
+    
+    console.log("Deploy started");
+    
+    const contractDeployed = await ethers.deployContract(
+      contractName,
+      args
+    );
+    console.log(`Contract ${contract} deployed at address: `, contractDeployed.address);
+    await contractDeployed.deployTransaction.wait();
+});
+
+task("mnemonic", "Prints a new valid mnemonic to use instead of default one")
+  .setAction(async (_, { ethers }) => {
+    const { mnemonic: { phrase: mnemonicPhrase } } = ethers.Wallet.createRandom()
+    console.log(mnemonicPhrase);
+  }
+)
+
+// if config.networks.hardhat.accounts is set
+// the private keys are not shown by the hardhat node
+task("hardhat-account-infos", "Prints more informations about the accounts used by hardhat",
+  async ( _, hre) => {
+    const { accounts } = hre.config.networks.hardhat;
+    await hre.run("account-info", accounts)
+});
+
+// general use purpose
+// you have a mnemonic and you want to get the accounts infos
+task("account-info", "Prints the accounts informations from a mnemonic")
+  .addParam("mnemonic", "should be valid")
+  .addOptionalParam("count", "number of accounts to print", 5, types.int)
+  .addOptionalParam("path", "", "m/44'/60'/0'/0/")
+  .addOptionalParam("initialIndex", "first account index", 0, types.int)
+  .setAction(async ({ mnemonic, count, path, initialIndex, passphrase }, { ethers } ) => {
+    
+    console.log("Mnemonic: ", mnemonic);
+
+    Array(count).fill(0).map((_, i) => {
+      const PATH = path + (i + initialIndex).toString()
+      const wallet = ethers.Wallet.fromMnemonic(mnemonic, PATH)
+
+      console.log("Address: ", wallet.address);
+      console.log("privateKey: ", wallet.privateKey);
+      console.log("publicKey: ", wallet.publicKey);
+      console.log("----------")
+    })
+  })
