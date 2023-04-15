@@ -14,15 +14,14 @@ describe("Integration tests examples", function () {
 
     it("Should print a account infos", async function () {
       await this.hre.run("account-info", {
-        mnemonic: "script horror palace pear bottom rigid style seat extra vital illegal trial",
-        count: 2
+        mnemonic:
+          "script horror palace pear bottom rigid style seat extra vital illegal trial",
+        count: 2,
       });
     });
 
     it("Should print hardhat account infos", async function () {
       await this.hre.run("hardhat-account-infos");
     });
-
   });
-  
 });
