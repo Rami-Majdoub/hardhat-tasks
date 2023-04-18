@@ -126,22 +126,23 @@ task(
 task("account-info", "Prints the accounts informations from a mnemonic")
   .addParam("mnemonic", "should be valid")
   .addOptionalParam("count", "number of accounts to print", 5, types.int)
-  .addOptionalParam("path", "", "m/44'/60'/0'/0/")
+  .addOptionalParam("path", "", "m/44'/60'/0'/0")
   .addOptionalParam("initialIndex", "first account index", 0, types.int)
   .setAction(
     async ({ mnemonic, count, path, initialIndex, passphrase }, { ethers }) => {
-      console.log("Mnemonic: ", mnemonic);
+      console.log("Mnemonic: " + mnemonic + "\n");
 
       Array(count)
         .fill(0)
         .map((_, i) => {
-          const PATH = path + (i + initialIndex).toString();
-          const wallet = ethers.Wallet.fromMnemonic(mnemonic, PATH);
+          const accountPath = path + "/" + (i + initialIndex).toString();
+          console.log("Path: " + accountPath);
 
-          console.log("Address: ", wallet.address);
-          console.log("privateKey: ", wallet.privateKey);
-          console.log("publicKey: ", wallet.publicKey);
-          console.log("----------");
+          const wallet = ethers.Wallet.fromMnemonic(mnemonic, accountPath);
+          console.log("Address: " + wallet.address);
+          console.log("PrivateKey: " + wallet.privateKey);
+          console.log("PublicKey: " + wallet.publicKey);
+          console.log("");
         });
     }
   );
