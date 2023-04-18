@@ -76,6 +76,9 @@ Prints the ABI of a contract
 | name | required |  description |
 | ---- | ---- | ---- |
 | contract | yes| path of the contract file  |
+| format | no | "full" or "minimal" or "json" (default: "full") |
+| save-to | no | file path (default: "") |
+
 
 #### example
 command

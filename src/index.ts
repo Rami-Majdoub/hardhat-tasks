@@ -1,27 +1,62 @@
 import "@nomiclabs/hardhat-ethers";
+import { writeFileSync } from "fs";
 import { task, types } from "hardhat/config";
 
 task("abi", "prints the ABI of a contract")
   .addParam("contract", "contract path", undefined, types.inputFile, false)
-  .setAction(async ({ contract }, { ethers, artifacts, run }) => {
-    await run("compile");
+  .addParam("format", "full | minimal | json", "full", types.string, true)
+  .addParam("saveTo", "file path", "", types.string, true)
+  .setAction(
+    async ({ contract, format, saveTo }, { ethers, artifacts, run }) => {
+      if (["full", "minimal", "json"].indexOf(format) == -1) {
+        console.log("format should be 'full' or 'minimal' or 'json'");
+        return;
+      }
 
-    // get contract fully qualified name
-    const allContracts = await artifacts.getAllFullyQualifiedNames();
-    const contractName =
-      allContracts.find((e) => e.startsWith(contract)) || contract;
+      await run("compile");
 
-    // read contract
-    const contractArtifact = await artifacts.readArtifact(contractName);
-    const contractFactory = (await ethers.getContractFactoryFromArtifact(
-      contractArtifact
-    )) as any;
+      // get contract fully qualified name
+      const allContracts = await artifacts.getAllFullyQualifiedNames();
+      const contractName =
+        allContracts.find((e) => e.startsWith(contract)) || contract;
 
-    const format = ethers.utils.FormatTypes.full; // full minimal json
-    const abi = contractFactory.interface.format(format);
+      // read contract
+      const contractArtifact = await artifacts.readArtifact(contractName);
+      const contractFactory = (await ethers.getContractFactoryFromArtifact(
+        contractArtifact
+      )) as any;
 
-    console.log(abi);
-  });
+      let abi;
+
+      switch (format) {
+        case "full":
+          abi = contractFactory.interface.format(ethers.utils.FormatTypes.full);
+          abi = JSON.stringify(abi, undefined, 2);
+          break;
+        case "minimal":
+          abi = contractFactory.interface.format(
+            ethers.utils.FormatTypes.minimal
+          );
+          abi = JSON.stringify(abi, undefined, 2);
+          break;
+        case "json":
+          abi = contractFactory.interface.format(ethers.utils.FormatTypes.json);
+          abi = JSON.stringify(JSON.parse(abi), undefined, 2);
+          break;
+        default:
+          throw Error(`specified format (${format}) is wrong`);
+      }
+
+      console.log(abi);
+
+      if (saveTo) {
+        console.log("Saving to file: " + saveTo);
+        // TypeError [ERR_INVALID_ARG_TYPE]: The "data" argument must be of type string or an instance of Buffer, TypedArray, or DataView. Received an instance of Array
+        // force string conversion
+        writeFileSync(saveTo, "" + abi);
+      }
+    }
+  );
 
 task("deploy", "deploys a contract")
   .addParam("contract", "contract path", undefined, types.inputFile, false)
