@@ -1,6 +1,6 @@
 {
   "name": "@rami-majdoub/hardhat-tasks",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Hardhat tasks",
   "repository": "github:Rami-Majdoub/hardhat-tasks",
   "author": "Rami Majdoub",

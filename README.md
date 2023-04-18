@@ -1,4 +1,4 @@
-# hardhat-example-plugin
+# hardhat-tasks
 
 _Boilerplate code transformed into tasks_
 
@@ -89,7 +89,7 @@ npx hardhat abi --contract contracts/Lock.sol
 
 output
 
-```json
+```js
 [
   'constructor(uint256 _unlockTime) payable',
   'event Withdrawal(uint256 amount, uint256 when)',
